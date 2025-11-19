@@ -2,8 +2,10 @@ import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from datetime import datetime
-import psycopg2
-from psycopg2.extras import RealDictCursor
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from sqlalchemy import or_, literal
+from sqlalchemy.exc import IntegrityError
 import unicodedata
 import logging
 import json as json_lib
@@ -19,15 +21,45 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+db = SQLAlchemy()
+migrate = Migrate()
+
 app = Flask(__name__)
 CORS(app)
 
 # Database configuration
 DATABASE_URL = os.environ.get('DATABASE_URL')
-_db_initialized = False
+if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+
+if DATABASE_URL:
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+else:
+    logger.warning("⚠️  DATABASE_URL not set - defaulting to in-memory SQLite (data will not persist)")
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+migrate.init_app(app, db)
 
 # Google Sheets configuration
 GOOGLE_APPS_SCRIPT_URL = os.environ.get('GOOGLE_APPS_SCRIPT_URL')
+
+def run_migrations_on_startup():
+    if not DATABASE_URL:
+        logger.warning("⚠️  DATABASE_URL not set - cannot run migrations")
+        return
+
+    from flask_migrate import upgrade as migrate_upgrade
+
+    try:
+        with app.app_context():
+            logger.info("Running database migrations...")
+            migrate_upgrade()
+            logger.info("✓ Database migrations applied")
+    except Exception as e:
+        logger.error(f"✗ Failed to run database migrations: {str(e)}", exc_info=True)
 
 def normalize_name(name):
     """
@@ -43,57 +75,45 @@ def normalize_name(name):
     # Convert to lowercase and strip whitespace
     return without_accents.lower().strip()
 
-def get_db_connection():
-    """Create a database connection"""
-    conn = psycopg2.connect(DATABASE_URL)
-    return conn
+class Guest(db.Model):
+    __tablename__ = 'guests'
 
-def init_db():
-    """Initialize the database with the guests table"""
-    conn = get_db_connection()
-    cur = conn.cursor()
-    
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS guests (
-            id SERIAL PRIMARY KEY,
-            nombre VARCHAR(255) NOT NULL,
-            apellidos VARCHAR(255) NOT NULL,
-            nombre_normalized VARCHAR(255) NOT NULL,
-            apellidos_normalized VARCHAR(255) NOT NULL,
-            asistencia VARCHAR(50) NOT NULL,
-            acompanado VARCHAR(10) NOT NULL,
-            adultos INTEGER DEFAULT 0,
-            ninos INTEGER DEFAULT 0,
-            autobus VARCHAR(50),
-            alergias TEXT,
-            comentarios TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(nombre_normalized, apellidos_normalized)
-        )
-    ''')
-    
-    conn.commit()
-    cur.close()
-    conn.close()
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(255), nullable=False)
+    apellidos = db.Column(db.String(255), nullable=False)
+    nombre_normalized = db.Column(db.String(255), nullable=False)
+    apellidos_normalized = db.Column(db.String(255), nullable=False)
+    asistencia = db.Column(db.String(50), nullable=False)
+    acompanado = db.Column(db.String(10), nullable=False)
+    adultos = db.Column(db.Integer, nullable=False, default=0, server_default='0')
+    ninos = db.Column(db.Integer, nullable=False, default=0, server_default='0')
+    autobus = db.Column(db.String(50))
+    alergias = db.Column(db.Text)
+    comentarios = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 
-def ensure_database_initialized():
-    """Ensure the database schema exists (idempotent)."""
-    global _db_initialized
-    if _db_initialized:
-        return
+    __table_args__ = (
+        db.UniqueConstraint('nombre_normalized', 'apellidos_normalized', name='uix_guests_normalized_names'),
+    )
 
-    if not DATABASE_URL:
-        logger.warning("⚠️  DATABASE_URL not set - database will not be initialized")
-        return
-
-    logger.info("Initializing database (ensure)...")
-    try:
-        init_db()
-        _db_initialized = True
-        logger.info("✓ Database initialized successfully")
-    except Exception as e:
-        logger.error(f"✗ Database initialization failed: {str(e)}", exc_info=True)
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'nombre': self.nombre,
+            'apellidos': self.apellidos,
+            'nombre_normalized': self.nombre_normalized,
+            'apellidos_normalized': self.apellidos_normalized,
+            'asistencia': self.asistencia,
+            'acompanado': self.acompanado,
+            'adultos': self.adultos,
+            'ninos': self.ninos,
+            'autobus': self.autobus,
+            'alergias': self.alergias,
+            'comentarios': self.comentarios,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
 
 def add_to_google_sheets_via_script(guest_data):
     """Add guest data to Google Sheets via Google Apps Script"""
@@ -146,10 +166,6 @@ def health():
     """Health check endpoint"""
     return jsonify({'status': 'healthy'}), 200
 
-@app.before_first_request
-def initialize_database_on_first_request():
-    ensure_database_initialized()
-
 @app.route('/api/guests', methods=['POST'])
 def create_guest():
     """
@@ -196,84 +212,72 @@ def create_guest():
         logger.info(f"[{request_id}] Normalized: {first_name_normalized} {last_names_normalized}")
         logger.info(f"[{request_id}] Attendance: {guest_data['asistencia']}, Companions: {guest_data['acompanado']}")
         
-        # Connect to database
-        logger.debug(f"[{request_id}] Connecting to database...")
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        
         # Check if guest already exists with multiple strategies
         logger.debug(f"[{request_id}] Checking for duplicate...")
-        
-        # Strategy 1: Exact match on normalized names
-        cur.execute('''
-            SELECT id, nombre, apellidos 
-            FROM guests 
-            WHERE nombre_normalized = %s AND apellidos_normalized = %s
-        ''', (first_name_normalized, last_names_normalized))
-        existing_guest = cur.fetchone()
-        
+
+        existing_guest = Guest.query.filter_by(
+            nombre_normalized=first_name_normalized,
+            apellidos_normalized=last_names_normalized
+        ).first()
+
         if existing_guest:
-            logger.warning(f"[{request_id}] ✗ DUPLICATE DETECTED (exact match) - Guest already exists: {existing_guest['nombre']} {existing_guest['apellidos']} (ID: {existing_guest['id']})")
-            cur.close()
-            conn.close()
+            logger.warning(f"[{request_id}] ✗ DUPLICATE DETECTED (exact match) - Guest already exists: {existing_guest.nombre} {existing_guest.apellidos} (ID: {existing_guest.id})")
+            return jsonify({
+                'error': 'Este nombre ya ha sido registrado. Si necesitas actualizar tu confirmación, por favor contacta con los novios.'
+            }), 409
+
+        # Strategy 2: Check for partial last names match (Spanish naming convention)
+        potential_duplicate = None
+        last_names_parts = last_names_normalized.split()
+        if last_names_parts:
+            first_last_name = last_names_parts[0]
+            potential_duplicate = (
+                Guest.query
+                .filter(Guest.nombre_normalized == first_name_normalized)
+                .filter(
+                    or_(
+                        Guest.apellidos_normalized == first_last_name,
+                        Guest.apellidos_normalized.like(f"{first_last_name} %"),
+                        literal(last_names_normalized).like(db.func.concat(Guest.apellidos_normalized, ' %'))
+                    )
+                )
+                .first()
+            )
+
+        if potential_duplicate:
+            logger.warning(f"[{request_id}] ✗ POTENTIAL DUPLICATE DETECTED (partial last names match)")
+            logger.warning(f"[{request_id}]   New: {guest_data['nombre']} {guest_data['apellidos']} (normalized: {first_name_normalized} {last_names_normalized})")
+            logger.warning(f"[{request_id}]   Existing: {potential_duplicate.nombre} {potential_duplicate.apellidos} (ID: {potential_duplicate.id}, normalized: {potential_duplicate.apellidos_normalized})")
+            return jsonify({
+                'error': f'Posible duplicado detectado. Ya existe un registro similar: "{potential_duplicate.nombre} {potential_duplicate.apellidos}". Si eres una persona diferente o necesitas actualizar tu confirmación, por favor contacta con los novios.'
+            }), 409
+
+        new_guest = Guest(
+            nombre=guest_data['nombre'],
+            apellidos=guest_data['apellidos'],
+            nombre_normalized=first_name_normalized,
+            apellidos_normalized=last_names_normalized,
+            asistencia=guest_data['asistencia'],
+            acompanado=guest_data['acompanado'],
+            adultos=guest_data['adultos'],
+            ninos=guest_data['ninos'],
+            autobus=guest_data['autobus'],
+            alergias=guest_data['alergias'],
+            comentarios=guest_data['comentarios']
+        )
+
+        db.session.add(new_guest)
+
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            logger.warning(f"[{request_id}] ✗ DUPLICATE DETECTED (db constraint) - Guest already exists")
             return jsonify({
                 'error': 'Este nombre ya ha sido registrado. Si necesitas actualizar tu confirmación, por favor contacta con los novios.'
             }), 409
         
-        # Strategy 2: Check for partial last names match (Spanish naming convention)
-        # Example: "García López" should match "García" or vice versa
-        last_names_parts = last_names_normalized.split()
-        if len(last_names_parts) > 0:
-            first_last_name = last_names_parts[0]
-            
-            # Check if someone with same first name and first last name exists
-            cur.execute('''
-                SELECT id, nombre, apellidos, apellidos_normalized
-                FROM guests 
-                WHERE nombre_normalized = %s 
-                AND (apellidos_normalized = %s 
-                     OR apellidos_normalized LIKE %s 
-                     OR %s LIKE apellidos_normalized || ' %%')
-            ''', (first_name_normalized, first_last_name, first_last_name + ' %', last_names_normalized))
-            
-            potential_duplicate = cur.fetchone()
-            
-            if potential_duplicate:
-                logger.warning(f"[{request_id}] ✗ POTENTIAL DUPLICATE DETECTED (partial last names match)")
-                logger.warning(f"[{request_id}]   New: {guest_data['nombre']} {guest_data['apellidos']} (normalized: {first_name_normalized} {last_names_normalized})")
-                logger.warning(f"[{request_id}]   Existing: {potential_duplicate['nombre']} {potential_duplicate['apellidos']} (ID: {potential_duplicate['id']}, normalized: {potential_duplicate['apellidos_normalized']})")
-                cur.close()
-                conn.close()
-                return jsonify({
-                    'error': f'Posible duplicado detectado. Ya existe un registro similar: "{potential_duplicate["nombre"]} {potential_duplicate["apellidos"]}". Si eres una persona diferente o necesitas actualizar tu confirmación, por favor contacta con los novios.'
-                }), 409
-        
-        # Insert new guest with both original and normalized names
-        cur.execute('''
-            INSERT INTO guests (nombre, apellidos, nombre_normalized, apellidos_normalized, 
-                              asistencia, acompanado, adultos, ninos, autobus, alergias, comentarios)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING id, nombre, apellidos, created_at
-        ''', (
-            guest_data['nombre'],
-            guest_data['apellidos'],
-            first_name_normalized,
-            last_names_normalized,
-            guest_data['asistencia'],
-            guest_data['acompanado'],
-            guest_data['adultos'],
-            guest_data['ninos'],
-            guest_data['autobus'],
-            guest_data['alergias'],
-            guest_data['comentarios']
-        ))
-        
-        new_guest = cur.fetchone()
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        logger.info(f"[{request_id}] ✓ Guest saved to database - ID: {new_guest['id']}")
+        logger.info(f"[{request_id}] ✓ Guest saved to database - ID: {new_guest.id}")
         
         # Add to Google Sheets (non-blocking, errors won't fail the request)
         logger.info(f"[{request_id}] Attempting Google Sheets sync...")
@@ -283,10 +287,10 @@ def create_guest():
             'success': True,
             'message': '¡Confirmación recibida con éxito!',
             'guest': {
-                'id': new_guest['id'],
-                'nombre': new_guest['nombre'],
-                'apellidos': new_guest['apellidos'],
-                'created_at': new_guest['created_at'].isoformat()
+                'id': new_guest.id,
+                'nombre': new_guest.nombre,
+                'apellidos': new_guest.apellidos,
+                'created_at': new_guest.created_at.isoformat() if new_guest.created_at else None
             },
             'synced_to_sheets': sheets_success
         }
@@ -297,6 +301,7 @@ def create_guest():
         return jsonify(response_data), 201
         
     except Exception as e:
+        db.session.rollback()
         logger.error(f"[{request_id}] ✗ EXCEPTION - Error creating guest: {str(e)}", exc_info=True)
         logger.info(f"[{request_id}] ========================================")
         return jsonify({
@@ -311,30 +316,17 @@ def get_guests():
     logger.info(f"[{request_id}] Remote Address: {request.remote_addr}")
     
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        guests = Guest.query.order_by(Guest.created_at.desc()).all()
+        guests_payload = [guest.to_dict() for guest in guests]
         
-        cur.execute('SELECT * FROM guests ORDER BY created_at DESC')
-        guests = cur.fetchall()
-        
-        cur.close()
-        conn.close()
-        
-        logger.info(f"[{request_id}] Found {len(guests)} guests in database")
-        
-        # Convert datetime objects to strings
-        for guest in guests:
-            if guest['created_at']:
-                guest['created_at'] = guest['created_at'].isoformat()
-            if guest['updated_at']:
-                guest['updated_at'] = guest['updated_at'].isoformat()
+        logger.info(f"[{request_id}] Found {len(guests_payload)} guests in database")
         
         logger.info(f"[{request_id}] ✓ Successfully returned {len(guests)} guests")
         
         return jsonify({
             'success': True,
-            'count': len(guests),
-            'guests': guests
+            'count': len(guests_payload),
+            'guests': guests_payload
         }), 200
         
     except Exception as e:
@@ -350,8 +342,8 @@ if __name__ == '__main__':
     logger.info(f"Database URL: {DATABASE_URL[:50]}..." if DATABASE_URL else "Database URL: NOT SET")
     logger.info(f"Google Apps Script: {'CONFIGURED' if GOOGLE_APPS_SCRIPT_URL else 'NOT CONFIGURED'}")
     
-    # Initialize database on startup
-    ensure_database_initialized()
+    # Apply database migrations on startup
+    run_migrations_on_startup()
     
     port = int(os.environ.get('PORT', 5000))
     logger.info(f"Starting server on 0.0.0.0:{port}")

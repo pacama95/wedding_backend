@@ -133,7 +133,13 @@ In Railway project settings, add:
 - `GOOGLE_APPS_SCRIPT_URL` - Your Google Apps Script URL (optional)
 
 ### 5. Deploy
-Railway will automatically deploy your application when you push to your repository.
+Set the Railway deploy/run command to execute migrations before starting the web server:
+
+```
+flask db upgrade && gunicorn app:app
+```
+
+Railway will automatically deploy your application when you push to your repository, running the migrations first so the schema is always up to date.
 
 **Verify Deployment:**
 - Check that Railway is using Python (not serving static HTML)

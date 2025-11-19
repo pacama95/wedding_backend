@@ -112,3 +112,9 @@
 2025-11-19 21:37:31,384 - __main__ - INFO - [20251119-213731-374624] Found 0 guests in database
 2025-11-19 21:37:31,384 - __main__ - INFO - [20251119-213731-374624] ✓ Successfully returned 0 guests
 2025-11-19 21:37:31,385 - werkzeug - INFO - 127.0.0.1 - - [19/Nov/2025 21:37:31] "GET /api/guests HTTP/1.1" 200 -
+2025-11-19 22:11:23,661 - __main__ - INFO - ================================================================================
+2025-11-19 22:11:23,661 - __main__ - INFO - 🚀 Starting Wedding RSVP Backend API
+2025-11-19 22:11:23,661 - __main__ - INFO - ================================================================================
+2025-11-19 22:11:23,661 - __main__ - INFO - Database URL: postgresql://wedding_user:wedding_pass@localhost:5...
+2025-11-19 22:11:23,661 - __main__ - INFO - Google Apps Script: CONFIGURED
+2025-11-19 22:11:23,661 - __main__ - INFO - Running database migrations...
