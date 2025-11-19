@@ -6,6 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy import or_, literal
 from sqlalchemy.exc import IntegrityError
+from concurrent.futures import ThreadPoolExecutor
 import unicodedata
 import logging
 import json as json_lib
@@ -20,6 +21,9 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+SHEETS_SYNC_WORKERS = int(os.environ.get('SHEETS_SYNC_WORKERS', 2))
+sheets_executor = ThreadPoolExecutor(max_workers=max(1, SHEETS_SYNC_WORKERS))
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -161,6 +165,20 @@ def add_to_google_sheets(guest_data):
     """Add guest data to Google Sheets via Google Apps Script"""
     return add_to_google_sheets_via_script(guest_data)
 
+def enqueue_google_sheets_sync(guest_data):
+    """Submit Google Sheets synchronization to a background thread."""
+    def _log_result(future):
+        try:
+            success = future.result()
+            status = "✓" if success else "✗"
+            logger.info(f"Google Sheets async sync completed {status} for {guest_data['nombre']} {guest_data['apellidos']}")
+        except Exception as exc:
+            logger.error(f"✗ Google Sheets async sync crashed: {exc}", exc_info=True)
+
+    future = sheets_executor.submit(add_to_google_sheets, guest_data.copy())
+    future.add_done_callback(_log_result)
+    logger.info(f"Queued Google Sheets sync for {guest_data['nombre']} {guest_data['apellidos']} (async)")
+
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint"""
@@ -279,9 +297,9 @@ def create_guest():
         
         logger.info(f"[{request_id}] ✓ Guest saved to database - ID: {new_guest.id}")
         
-        # Add to Google Sheets (non-blocking, errors won't fail the request)
-        logger.info(f"[{request_id}] Attempting Google Sheets sync...")
-        sheets_success = add_to_google_sheets(guest_data)
+        # Add to Google Sheets asynchronously (non-blocking)
+        logger.info(f"[{request_id}] Queuing Google Sheets sync (async)...")
+        enqueue_google_sheets_sync(guest_data)
         
         response_data = {
             'success': True,
@@ -292,7 +310,7 @@ def create_guest():
                 'apellidos': new_guest.apellidos,
                 'created_at': new_guest.created_at.isoformat() if new_guest.created_at else None
             },
-            'synced_to_sheets': sheets_success
+            'synced_to_sheets': 'pending'
         }
         
         logger.info(f"[{request_id}] ✓ SUCCESS - Response: {json_lib.dumps(response_data, ensure_ascii=False)}")
