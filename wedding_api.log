@@ -1,0 +1,114 @@
+2025-11-19 21:10:54,681 - __main__ - INFO - ================================================================================
+2025-11-19 21:10:54,681 - __main__ - INFO - 🚀 Starting Wedding RSVP Backend API
+2025-11-19 21:10:54,681 - __main__ - INFO - ================================================================================
+2025-11-19 21:10:54,681 - __main__ - INFO - Database URL: postgresql://wedding_user:wedding_pass@localhost:5...
+2025-11-19 21:10:54,681 - __main__ - INFO - Google Apps Script: CONFIGURED
+2025-11-19 21:10:54,681 - __main__ - INFO - Initializing database...
+2025-11-19 21:10:54,699 - __main__ - INFO - ✓ Database initialized successfully
+2025-11-19 21:10:54,699 - __main__ - INFO - Starting server on 0.0.0.0:5001
+2025-11-19 21:10:54,699 - __main__ - INFO - ================================================================================
+2025-11-19 21:11:37,013 - __main__ - INFO - ================================================================================
+2025-11-19 21:11:37,013 - __main__ - INFO - 🚀 Starting Wedding RSVP Backend API
+2025-11-19 21:11:37,013 - __main__ - INFO - ================================================================================
+2025-11-19 21:11:37,013 - __main__ - INFO - Database URL: postgresql://wedding_user:wedding_pass@localhost:5...
+2025-11-19 21:11:37,013 - __main__ - INFO - Google Apps Script: CONFIGURED
+2025-11-19 21:11:37,013 - __main__ - INFO - Initializing database...
+2025-11-19 21:11:37,028 - __main__ - INFO - ✓ Database initialized successfully
+2025-11-19 21:11:37,028 - __main__ - INFO - Starting server on 0.0.0.0:5001
+2025-11-19 21:11:37,028 - __main__ - INFO - ================================================================================
+2025-11-19 21:11:37,037 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.50.112:5001
+2025-11-19 21:11:37,037 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-19 21:12:45,142 - werkzeug - INFO - 127.0.0.1 - - [19/Nov/2025 21:12:45] "OPTIONS /api/guests HTTP/1.1" 200 -
+2025-11-19 21:12:45,143 - __main__ - INFO - [20251119-211245-143655] ========== NEW GUEST REQUEST ==========
+2025-11-19 21:12:45,143 - __main__ - INFO - [20251119-211245-143655] Method: POST, Path: /api/guests
+2025-11-19 21:12:45,143 - __main__ - INFO - [20251119-211245-143655] Remote Address: 127.0.0.1
+2025-11-19 21:12:45,143 - __main__ - INFO - [20251119-211245-143655] User Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36
+2025-11-19 21:12:45,143 - __main__ - INFO - [20251119-211245-143655] Request Data: {"nombre": "Perico ", "apellidos": "Palotes", "asistencia": "si", "acompanado": "no", "adultos": "0", "ninos": "0", "autobus": "solo_vuelta", "alergias": "adadas", "comentarios": "dasdsa"}
+2025-11-19 21:12:45,144 - __main__ - INFO - [20251119-211245-143655] Guest: Perico Palotes
+2025-11-19 21:12:45,144 - __main__ - INFO - [20251119-211245-143655] Normalized: perico palotes
+2025-11-19 21:12:45,144 - __main__ - INFO - [20251119-211245-143655] Attendance: si, Companions: no
+2025-11-19 21:12:45,158 - __main__ - INFO - [20251119-211245-143655] ✓ Guest saved to database - ID: 5
+2025-11-19 21:12:45,158 - __main__ - INFO - [20251119-211245-143655] Attempting Google Sheets sync...
+2025-11-19 21:12:45,189 - __main__ - INFO - Syncing to Google Sheets - Guest: Perico Palotes
+2025-11-19 21:12:48,166 - __main__ - INFO - Google Sheets response - Status: 200, Body: {"success":true}
+2025-11-19 21:12:48,166 - __main__ - INFO - ✓ Successfully synced to Google Sheets: Perico Palotes
+2025-11-19 21:12:48,169 - __main__ - INFO - [20251119-211245-143655] ✓ SUCCESS - Response: {"success": true, "message": "¡Confirmación recibida con éxito!", "guest": {"id": 5, "nombre": "Perico", "apellidos": "Palotes", "created_at": "2025-11-19T20:12:45.153367"}, "synced_to_sheets": true}
+2025-11-19 21:12:48,169 - __main__ - INFO - [20251119-211245-143655] ========================================
+2025-11-19 21:12:48,170 - werkzeug - INFO - 127.0.0.1 - - [19/Nov/2025 21:12:48] "[35m[1mPOST /api/guests HTTP/1.1[0m" 201 -
+2025-11-19 21:13:11,784 - werkzeug - INFO - 127.0.0.1 - - [19/Nov/2025 21:13:11] "OPTIONS /api/guests HTTP/1.1" 200 -
+2025-11-19 21:13:11,786 - __main__ - INFO - [20251119-211311-786151] ========== NEW GUEST REQUEST ==========
+2025-11-19 21:13:11,786 - __main__ - INFO - [20251119-211311-786151] Method: POST, Path: /api/guests
+2025-11-19 21:13:11,786 - __main__ - INFO - [20251119-211311-786151] Remote Address: 127.0.0.1
+2025-11-19 21:13:11,787 - __main__ - INFO - [20251119-211311-786151] User Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36
+2025-11-19 21:13:11,787 - __main__ - INFO - [20251119-211311-786151] Request Data: {"nombre": "Perico ", "apellidos": "Palotes", "asistencia": "si", "acompanado": "si", "adultos": "3", "ninos": "1", "autobus": "ida_y_vuelta", "alergias": "adasdasd", "comentarios": "adsdadaewe"}
+2025-11-19 21:13:11,787 - __main__ - INFO - [20251119-211311-786151] Guest: Perico Palotes
+2025-11-19 21:13:11,787 - __main__ - INFO - [20251119-211311-786151] Normalized: perico palotes
+2025-11-19 21:13:11,787 - __main__ - INFO - [20251119-211311-786151] Attendance: si, Companions: si
+2025-11-19 21:13:11,802 - __main__ - WARNING - [20251119-211311-786151] ✗ DUPLICATE DETECTED - Guest already exists: Perico Palotes (ID: 5)
+2025-11-19 21:13:11,803 - werkzeug - INFO - 127.0.0.1 - - [19/Nov/2025 21:13:11] "[31m[1mPOST /api/guests HTTP/1.1[0m" 409 -
+2025-11-19 21:17:02,089 - __main__ - INFO - ================================================================================
+2025-11-19 21:17:02,089 - __main__ - INFO - 🚀 Starting Wedding RSVP Backend API
+2025-11-19 21:17:02,089 - __main__ - INFO - ================================================================================
+2025-11-19 21:17:02,089 - __main__ - INFO - Database URL: postgresql://wedding_user:wedding_pass@localhost:5...
+2025-11-19 21:17:02,089 - __main__ - INFO - Google Apps Script: CONFIGURED
+2025-11-19 21:17:02,089 - __main__ - INFO - Initializing database...
+2025-11-19 21:17:02,106 - __main__ - INFO - ✓ Database initialized successfully
+2025-11-19 21:17:02,106 - __main__ - INFO - Starting server on 0.0.0.0:5001
+2025-11-19 21:17:02,106 - __main__ - INFO - ================================================================================
+2025-11-19 21:17:02,115 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.50.112:5001
+2025-11-19 21:17:02,115 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-19 21:17:23,936 - werkzeug - INFO - 127.0.0.1 - - [19/Nov/2025 21:17:23] "OPTIONS /api/guests HTTP/1.1" 200 -
+2025-11-19 21:17:23,939 - __main__ - INFO - [20251119-211723-939894] ========== NEW GUEST REQUEST ==========
+2025-11-19 21:17:23,940 - __main__ - INFO - [20251119-211723-939894] Method: POST, Path: /api/guests
+2025-11-19 21:17:23,940 - __main__ - INFO - [20251119-211723-939894] Remote Address: 127.0.0.1
+2025-11-19 21:17:23,940 - __main__ - INFO - [20251119-211723-939894] User Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36
+2025-11-19 21:17:23,940 - __main__ - INFO - [20251119-211723-939894] Request Data: {"nombre": "Perico ", "apellidos": "Pálotes", "asistencia": "si", "acompanado": "si", "adultos": "3", "ninos": "2", "autobus": "solo_ida", "alergias": "adad", "comentarios": "adsad"}
+2025-11-19 21:17:23,940 - __main__ - INFO - [20251119-211723-939894] Guest: Perico Pálotes
+2025-11-19 21:17:23,940 - __main__ - INFO - [20251119-211723-939894] Normalized: perico palotes
+2025-11-19 21:17:23,940 - __main__ - INFO - [20251119-211723-939894] Attendance: si, Companions: si
+2025-11-19 21:17:23,956 - __main__ - WARNING - [20251119-211723-939894] ✗ DUPLICATE DETECTED (exact match) - Guest already exists: Perico Palotes (ID: 5)
+2025-11-19 21:17:23,956 - werkzeug - INFO - 127.0.0.1 - - [19/Nov/2025 21:17:23] "[31m[1mPOST /api/guests HTTP/1.1[0m" 409 -
+2025-11-19 21:17:36,560 - werkzeug - INFO - 127.0.0.1 - - [19/Nov/2025 21:17:36] "OPTIONS /api/guests HTTP/1.1" 200 -
+2025-11-19 21:17:36,562 - __main__ - INFO - [20251119-211736-562176] ========== NEW GUEST REQUEST ==========
+2025-11-19 21:17:36,562 - __main__ - INFO - [20251119-211736-562176] Method: POST, Path: /api/guests
+2025-11-19 21:17:36,562 - __main__ - INFO - [20251119-211736-562176] Remote Address: 127.0.0.1
+2025-11-19 21:17:36,562 - __main__ - INFO - [20251119-211736-562176] User Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36
+2025-11-19 21:17:36,562 - __main__ - INFO - [20251119-211736-562176] Request Data: {"nombre": "Perico Jr.", "apellidos": "Pálotes", "asistencia": "si", "acompanado": "si", "adultos": "3", "ninos": "2", "autobus": "solo_ida", "alergias": "adad", "comentarios": "adsad"}
+2025-11-19 21:17:36,562 - __main__ - INFO - [20251119-211736-562176] Guest: Perico Jr. Pálotes
+2025-11-19 21:17:36,562 - __main__ - INFO - [20251119-211736-562176] Normalized: perico jr. palotes
+2025-11-19 21:17:36,562 - __main__ - INFO - [20251119-211736-562176] Attendance: si, Companions: si
+2025-11-19 21:17:36,582 - __main__ - INFO - [20251119-211736-562176] ✓ Guest saved to database - ID: 6
+2025-11-19 21:17:36,582 - __main__ - INFO - [20251119-211736-562176] Attempting Google Sheets sync...
+2025-11-19 21:17:36,618 - __main__ - INFO - Syncing to Google Sheets - Guest: Perico Jr. Pálotes
+2025-11-19 21:17:39,473 - __main__ - INFO - Google Sheets response - Status: 200, Body: {"success":true}
+2025-11-19 21:17:39,474 - __main__ - INFO - ✓ Successfully synced to Google Sheets: Perico Jr. Pálotes
+2025-11-19 21:17:39,478 - __main__ - INFO - [20251119-211736-562176] ✓ SUCCESS - Response: {"success": true, "message": "¡Confirmación recibida con éxito!", "guest": {"id": 6, "nombre": "Perico Jr.", "apellidos": "Pálotes", "created_at": "2025-11-19T20:17:36.576977"}, "synced_to_sheets": true}
+2025-11-19 21:17:39,479 - __main__ - INFO - [20251119-211736-562176] ========================================
+2025-11-19 21:17:39,479 - werkzeug - INFO - 127.0.0.1 - - [19/Nov/2025 21:17:39] "[35m[1mPOST /api/guests HTTP/1.1[0m" 201 -
+2025-11-19 21:35:51,869 - __main__ - INFO - ================================================================================
+2025-11-19 21:35:51,869 - __main__ - INFO - 🚀 Starting Wedding RSVP Backend API
+2025-11-19 21:35:51,869 - __main__ - INFO - ================================================================================
+2025-11-19 21:35:51,869 - __main__ - INFO - Database URL: postgresql://wedding_user:wedding_pass@localhost:5...
+2025-11-19 21:35:51,869 - __main__ - INFO - Google Apps Script: CONFIGURED
+2025-11-19 21:35:51,869 - __main__ - INFO - Initializing database...
+2025-11-19 21:35:51,896 - __main__ - INFO - ✓ Database initialized successfully
+2025-11-19 21:35:51,896 - __main__ - INFO - Starting server on 0.0.0.0:5001
+2025-11-19 21:35:51,896 - __main__ - INFO - ================================================================================
+2025-11-19 21:35:51,906 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.50.112:5001
+2025-11-19 21:35:51,906 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-19 21:37:06,864 - werkzeug - INFO - 127.0.0.1 - - [19/Nov/2025 21:37:06] "GET /health HTTP/1.1" 200 -
+2025-11-19 21:37:11,532 - werkzeug - INFO - 127.0.0.1 - - [19/Nov/2025 21:37:11] "[33mGET /guests HTTP/1.1[0m" 404 -
+2025-11-19 21:37:31,374 - __main__ - INFO - [20251119-213731-374624] GET /api/guests - Fetching all guests
+2025-11-19 21:37:31,374 - __main__ - INFO - [20251119-213731-374624] Remote Address: 127.0.0.1
+2025-11-19 21:37:31,384 - __main__ - INFO - [20251119-213731-374624] Found 0 guests in database
+2025-11-19 21:37:31,384 - __main__ - INFO - [20251119-213731-374624] ✓ Successfully returned 0 guests
+2025-11-19 21:37:31,385 - werkzeug - INFO - 127.0.0.1 - - [19/Nov/2025 21:37:31] "GET /api/guests HTTP/1.1" 200 -
