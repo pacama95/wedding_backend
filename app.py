@@ -24,6 +24,7 @@ CORS(app)
 
 # Database configuration
 DATABASE_URL = os.environ.get('DATABASE_URL')
+_db_initialized = False
 
 # Google Sheets configuration
 GOOGLE_APPS_SCRIPT_URL = os.environ.get('GOOGLE_APPS_SCRIPT_URL')
@@ -76,6 +77,24 @@ def init_db():
     cur.close()
     conn.close()
 
+def ensure_database_initialized():
+    """Ensure the database schema exists (idempotent)."""
+    global _db_initialized
+    if _db_initialized:
+        return
+
+    if not DATABASE_URL:
+        logger.warning("⚠️  DATABASE_URL not set - database will not be initialized")
+        return
+
+    logger.info("Initializing database (ensure)...")
+    try:
+        init_db()
+        _db_initialized = True
+        logger.info("✓ Database initialized successfully")
+    except Exception as e:
+        logger.error(f"✗ Database initialization failed: {str(e)}", exc_info=True)
+
 def add_to_google_sheets_via_script(guest_data):
     """Add guest data to Google Sheets via Google Apps Script"""
     import requests
@@ -126,6 +145,10 @@ def add_to_google_sheets(guest_data):
 def health():
     """Health check endpoint"""
     return jsonify({'status': 'healthy'}), 200
+
+@app.before_first_request
+def initialize_database_on_first_request():
+    ensure_database_initialized()
 
 @app.route('/api/guests', methods=['POST'])
 def create_guest():
@@ -328,15 +351,7 @@ if __name__ == '__main__':
     logger.info(f"Google Apps Script: {'CONFIGURED' if GOOGLE_APPS_SCRIPT_URL else 'NOT CONFIGURED'}")
     
     # Initialize database on startup
-    if DATABASE_URL:
-        logger.info("Initializing database...")
-        try:
-            init_db()
-            logger.info("✓ Database initialized successfully")
-        except Exception as e:
-            logger.error(f"✗ Database initialization failed: {str(e)}", exc_info=True)
-    else:
-        logger.warning("⚠️  DATABASE_URL not set - database will not be initialized")
+    ensure_database_initialized()
     
     port = int(os.environ.get('PORT', 5000))
     logger.info(f"Starting server on 0.0.0.0:{port}")
