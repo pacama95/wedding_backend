@@ -2,6 +2,8 @@
 
 Python Flask backend for managing wedding guest confirmations with PostgreSQL storage and Google Sheets synchronization.
 
+> **Disclaimer:** This is a small personal project meant as a quick solution for my wedding website. It prioritizes practicality over production-ready best practices.
+
 ## 🚀 Quick Start (Local Development)
 
 ```bash
